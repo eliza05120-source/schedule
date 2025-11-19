@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>712班课程表 | Class Schedule</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- 变量定义 System Variables (Light Mode Default) --- */
+        :root {
+            /* 核心色板 - 浅色模式 */
+            --bg-body: #f7f9fc;
+            --bg-card: #ffffff;
+            --text-primary: #2d3748;
+            --text-secondary: #718096;
+            --text-tertiary: #a0aec0;
+            
+            --accent-color: #3b82f6;
+            --accent-bg: #e0f2fe;
+            
+            --gender-male: #60a5fa;   /* Male indicator */
+            --gender-female: #f472b6; /* Female indicator */
+            
+            --border-light: #e2e8f0;
+            --break-row-bg: #fdfdfe;
+            --hover-bg: #f0f4f8;
+            
+            --shadow-card: 0 5px 15px rgba(0, 0, 0, 0.08);
+            --is-today-bg: #eef2f8;
+            
+            --tooltip-bg: #2d3748;
+            --tooltip-text: #ffffff;
+
+            /* Modal */
+            --modal-overlay: rgba(255, 255, 255, 0.8);
+            --student-item-bg: #ffffff;
+            --student-item-border: #edf2f7;
+            --student-hover-bg: #f8fafc;
+            --id-badge-bg: #edf2f7;
+            --id-badge-text: #4a5568;
+        }
+
+        /* --- 深色模式 (Dark Mode) --- */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                /* 核心色板 - 深色模式 */
+                --bg-body: #1a1a1a;
+                --bg-card: #282828;
+                --text-primary: #e0e0e0;
+                --text-secondary: #a0a0a0;
+                --text-tertiary: #707070;
+                
+                --accent-color: #f7a30e;
+                --accent-bg: rgba(247, 163, 14, 0.15);
+                
+                --gender-male: #3b82f6;
+                --gender-female: #ec4899;
+
+                --border-light: #444444;
+                --break-row-bg: #333333;
+                --hover-bg: #3a3a3a;
+                
+                --shadow-card: 0 8px 20px rgba(0, 0, 0, 0.4);
+                --is-today-bg: rgba(68, 68, 68, 0.4);
+                
+                --tooltip-bg: #f0f0f0;
+                --tooltip-text: #282828;
+
+                /* Modal */
+                --modal-overlay: rgba(0, 0, 0, 0.7);
+                --student-item-bg: #2d2d2d;
+                --student-item-border: #3a3a3a;
+                --student-hover-bg: #333333;
+                --id-badge-bg: #3a3a3a;
+                --id-badge-text: #a0a0a0;
+            }
+        }
+
+        /* --- 基础重置 --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: 'Inter', 'Noto Sans SC', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            line-height: 1.5;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* --- 主容器 Card --- */
+        .main-card {
+            background: var(--bg-card);
+            width: 100%;
+            max-width: 1000px;
+            border-radius: 16px;
+            box-shadow: var(--shadow-card);
+            border: 1px solid var(--border-light);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 1;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+
+        /* --- 头部 Header --- */
+        header {
+            padding: 32px 40px;
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-card);
+        }
+
+        .header-left { display: flex; flex-direction: column; }
+
+        .header-title h1 {
+            font-size: 24px; font-weight: 700; letter-spacing: -0.5px;
+            color: var(--text-primary); margin-bottom: 4px;
+        }
+        .header-title span {
+            font-size: 13px; color: var(--text-secondary);
+            text-transform: uppercase; letter-spacing: 1px; font-weight: 500;
+        }
+
+        .header-right { display: flex; align-items: center; gap: 20px; }
+
+        .header-info { text-align: right; }
+        .date-display { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+        .week-badge {
+            display: inline-block; margin-top: 6px; font-size: 12px; padding: 4px 10px;
+            background-color: var(--bg-body); color: var(--text-secondary);
+            border-radius: 20px; font-weight: 500; border: 1px solid var(--border-light);
+            transition: all 0.3s ease;
+        }
+        .week-badge.active {
+            background-color: var(--accent-color); color: #ffffff; border-color: var(--accent-color);
+        }
+
+        /* --- 按钮 Button --- */
+        .btn-icon {
+            background: transparent; border: 1px solid var(--border-light);
+            color: var(--text-secondary); width: 40px; height: 40px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .btn-icon:hover {
+            background-color: var(--bg-body); color: var(--text-primary); border-color: var(--text-secondary);
+        }
+        .btn-icon svg { width: 20px; height: 20px; fill: currentColor; }
+
+        /* --- 表格区域 Table --- */
+        .table-wrapper { width: 100%; overflow-x: auto; padding-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 800px; }
+
+        thead th {
+            padding: 20px; text-align: left; font-size: 12px; text-transform: uppercase;
+            letter-spacing: 1.5px; color: var(--text-tertiary); font-weight: 600;
+            border-bottom: 1px solid var(--border-light);
+        }
+        thead th.time-header { width: 100px; text-align: right; padding-right: 24px; }
+
+        tbody td {
+            padding: 20px; border-bottom: 1px solid var(--border-light);
+            transition: background-color 0.2s ease; vertical-align: top;
+        }
+
+        .time-cell {
+            text-align: right; padding-right: 24px; border-right: 1px solid var(--border-light);
+            color: var(--text-secondary);
+        }
+        .time-idx {
+            display: block; font-size: 16px; font-weight: 700;
+            color: var(--text-primary); line-height: 1; margin-bottom: 6px;
+        }
+        .time-range {
+            font-size: 12px; font-weight: 500; color: var(--text-tertiary);
+            font-feature-settings: "tnum";
+        }
+
+        .course-cell {
+            font-size: 15px; font-weight: 500; color: var(--text-primary); cursor: default;
+        }
+        .course-cell:hover { background-color: var(--hover-bg); }
+
+        .break-row td {
+            background-color: var(--break-row-bg); padding: 12px 20px; color: var(--text-tertiary);
+            font-size: 12px; font-weight: 500; letter-spacing: 1px; text-align: center;
+            border-bottom: 1px solid var(--border-light);
+        }
+        .break-row .time-cell { border-right: none; text-align: center; padding-right: 0; }
+
+        .is-today { background-color: var(--is-today-bg); }
+        thead th.is-today { color: var(--accent-color); }
+
+        .current-class {
+            background-color: var(--accent-bg) !important; position: relative;
+        }
+        .current-class::before {
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+            background-color: var(--accent-color);
+        }
+        .time-cell.current-class::before { left: auto; right: -1px; width: 2px; }
+
+        /* --- Modal (学生名单) --- */
+        .modal-backdrop {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: var(--modal-overlay); backdrop-filter: blur(10px);
+            z-index: 2000; display: flex; justify-content: center; align-items: center;
+            opacity: 0; visibility: hidden; transition: all 0.3s ease;
+        }
+        .modal-backdrop.open { opacity: 1; visibility: visible; }
+        
+        .modal-card {
+            background-color: var(--bg-card); width: 90%; max-width: 720px;
+            border-radius: 20px; border: 1px solid var(--border-light);
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.15); padding: 32px;
+            transform: translateY(20px) scale(0.98); 
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex; flex-direction: column; max-height: 85vh;
+        }
+        .modal-backdrop.open .modal-card { transform: translateY(0) scale(1); }
+
+        .modal-header {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border-light);
+        }
+        .modal-title-group { display: flex; flex-direction: column; }
+        .modal-title { font-size: 20px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.5px; }
+        .modal-stats { font-size: 13px; color: var(--text-secondary); margin-top: 6px; font-weight: 500; }
+        
+        .btn-close { 
+            background: var(--bg-body); border: 1px solid transparent; border-radius: 50%;
+            cursor: pointer; color: var(--text-secondary); padding: 8px;
+            transition: all 0.2s; display: flex; align-items: center; justify-content: center;
+        }
+        .btn-close:hover { background: var(--hover-bg); color: var(--text-primary); }
+        .btn-close svg { width: 20px; height: 20px; fill: currentColor; }
+
+        /* 自定义滚动条 */
+        .student-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr);
+            gap: 12px; overflow-y: auto; padding-right: 8px;
+            padding-bottom: 4px;
+        }
+        .student-grid::-webkit-scrollbar { width: 5px; }
+        .student-grid::-webkit-scrollbar-track { background: transparent; }
+        .student-grid::-webkit-scrollbar-thumb { background-color: var(--border-light); border-radius: 10px; }
+        .student-grid::-webkit-scrollbar-thumb:hover { background-color: var(--text-tertiary); }
+
+        .student-item {
+            display: flex; align-items: center; padding: 12px 16px;
+            background-color: var(--student-item-bg); 
+            border-radius: 12px;
+            border: 1px solid var(--student-item-border); 
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 14px; cursor: default;
+        }
+        .student-item:hover { 
+            background-color: var(--student-hover-bg); 
+            border-color: var(--accent-color);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+        }
+
+        .student-id-badge {
+            font-family: 'Inter', monospace; font-weight: 600; 
+            color: var(--id-badge-text); background-color: var(--id-badge-bg);
+            width: 28px; height: 28px; border-radius: 6px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; margin-right: 12px; flex-shrink: 0;
+        }
+        
+        .student-name { font-weight: 600; color: var(--text-primary); flex-grow: 1; letter-spacing: 0.2px; }
+        
+        .gender-dot {
+            width: 8px; height: 8px; border-radius: 50%; margin-left: 8px; 
+            position: relative;
+        }
+        .gender-dot::after {
+            content: ''; position: absolute; top: -4px; left: -4px; right: -4px; bottom: -4px;
+        }
+        .gender-m { background-color: var(--gender-male); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15); }
+        .gender-f { background-color: var(--gender-female); box-shadow: 0 0 0 2px rgba(244, 114, 182, 0.15); }
+
+        /* --- Tooltip --- */
+        #tooltip {
+            position: absolute; background-color: var(--tooltip-bg); color: var(--tooltip-text);
+            padding: 12px 16px; border-radius: 8px; font-size: 13px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3); pointer-events: none;
+            opacity: 0; transform: translateY(8px); transition: opacity 0.2s, transform 0.2s;
+            z-index: 3000; display: flex; align-items: center; gap: 12px;
+            max-width: 240px; border: 1px solid var(--border-light);
+        }
+        #tooltip.visible { opacity: 1; transform: translateY(0); }
+        .tooltip-icon-box {
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(128,128,128,0.15); width: 36px; height: 36px; border-radius: 6px; flex-shrink: 0;
+        }
+        .tooltip-icon-box svg { width: 20px; height: 20px; fill: var(--tooltip-text); }
+        .tooltip-content { display: flex; flex-direction: column; }
+        .tooltip-title { font-weight: 600; font-size: 14px; margin-bottom: 2px; }
+        .tooltip-meta { opacity: 0.7; font-size: 12px; }
+
+        /* --- 假期遮罩 --- */
+        .holiday-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-card); opacity: 0.96;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 10; backdrop-filter: blur(5px);
+        }
+        .holiday-title { font-size: 32px; font-weight: 700; color: var(--text-primary); margin-bottom: 10px; }
+        .holiday-sub { color: var(--text-secondary); font-size: 16px; }
+
+        @media (max-width: 768px) {
+            body { padding: 15px; }
+            header { flex-direction: column; align-items: flex-start; gap: 15px; padding: 20px 24px; }
+            .header-right { width: 100%; justify-content: space-between; }
+            .header-info { text-align: left; }
+            .student-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; } /* 手机端双列 */
+            .modal-card { padding: 20px; max-height: 80vh; }
+            .modal-header { margin-bottom: 15px; padding-bottom: 12px; }
+            .modal-title { font-size: 18px; }
+            .student-item { padding: 10px 12px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="main-card">
+        <header>
+            <div class="header-left">
+                <div class="header-title">
+                    <h1>712班</h1>
+                    <span>Academic Schedule</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="header-info">
+                    <div class="date-display" id="date-str">Loading...</div>
+                    <div class="week-badge" id="week-badge">第 - 周</div>
+                </div>
+                <button class="btn-icon" id="btn-students" title="查看学生名单">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+                </button>
+            </div>
+        </header>
+
+        <div class="table-wrapper" style="position: relative;">
+            <!-- 假期遮罩 -->
+            <div id="holiday-mask" style="display: none;" class="holiday-overlay">
+                <div class="holiday-title">国庆假期</div>
+                <div class="holiday-sub">Enjoy your holiday</div>
+            </div>
+
+            <table id="timetable">
+                <thead>
+                    <tr>
+                        <th class="time-header">Time</th>
+                        <th data-day="1">MON</th>
+                        <th data-day="2">TUE</th>
+                        <th data-day="3">WED</th>
+                        <th data-day="4">THU</th>
+                        <th data-day="5">FRI</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr data-time="8:00-8:45">
+                        <td class="time-cell"><span class="time-idx">01</span><span class="time-range">08:00 - 08:45</span></td>
+                        <td class="course-cell" data-day="1">道法</td>
+                        <td class="course-cell" data-day="2">地理</td>
+                        <td class="course-cell" data-day="3">地理</td>
+                        <td class="course-cell" data-day="4" data-odd="劳动" data-even="书法"></td>
+                        <td class="course-cell" data-day="5">数学</td>
+                    </tr>
+                    <tr data-time="8:55-9:40">
+                        <td class="time-cell"><span class="time-idx">02</span><span class="time-range">08:55 - 09:40</span></td>
+                        <td class="course-cell" data-day="1">历史</td>
+                        <td class="course-cell" data-day="2">语文</td>
+                        <td class="course-cell" data-day="3">数学</td>
+                        <td class="course-cell" data-day="4">地理</td>
+                        <td class="course-cell" data-day="5">语文</td>
+                    </tr>
+                    <tr class="break-row"><td class="time-cell">09:40 - 10:00</td><td colspan="5">MORNING BREAK / 课间操</td></tr>
+                    <tr data-time="10:00-10:50">
+                        <td class="time-cell"><span class="time-idx">03</span><span class="time-range">10:00 - 10:50</span></td>
+                        <td class="course-cell" data-day="1">生物</td>
+                        <td class="course-cell" data-day="2">数学</td>
+                        <td class="course-cell" data-day="3">英语</td>
+                        <td class="course-cell" data-day="4">生物</td>
+                        <td class="course-cell" data-day="5" data-odd="信息" data-even="心理"></td>
+                    </tr>
+                    <tr data-time="11:00-11:45">
+                        <td class="time-cell"><span class="time-idx">04</span><span class="time-range">11:00 - 11:45</span></td>
+                        <td class="course-cell" data-day="1">英语</td>
+                        <td class="course-cell" data-day="2">美术</td>
+                        <td class="course-cell" data-day="3">历史</td>
+                        <td class="course-cell" data-day="4">英语</td>
+                        <td class="course-cell" data-day="5">英语</td>
+                    </tr>
+                    <tr class="break-row"><td class="time-cell">11:50 - 13:30</td><td colspan="5">LUNCH & REST / 午休</td></tr>
+                    <tr data-time="14:00-14:50">
+                        <td class="time-cell"><span class="time-idx">05</span><span class="time-range">14:00 - 14:50</span></td>
+                        <td class="course-cell" data-day="1">数学</td>
+                        <td class="course-cell" data-day="2">音乐</td>
+                        <td class="course-cell" data-day="3">语文</td>
+                        <td class="course-cell" data-day="4">数学</td>
+                        <td class="course-cell" data-day="5">历史</td>
+                    </tr>
+                    <tr data-time="15:00-15:45">
+                        <td class="time-cell"><span class="time-idx">06</span><span class="time-range">15:00 - 15:45</span></td>
+                        <td class="course-cell" data-day="1">体育</td>
+                        <td class="course-cell" data-day="2">英语</td>
+                        <td class="course-cell" data-day="3">语文</td>
+                        <td class="course-cell" data-day="4">语文</td>
+                        <td class="course-cell" data-day="5">生物</td>
+                    </tr>
+                    <tr data-time="15:55-16:40">
+                        <td class="time-cell"><span class="time-idx">07</span><span class="time-range">15:55 - 16:40</span></td>
+                        <td class="course-cell" data-day="1">语文</td>
+                        <td class="course-cell" data-day="2">英语</td>
+                        <td class="course-cell" data-day="3">道法</td>
+                        <td class="course-cell" data-day="4">体育</td>
+                        <td class="course-cell" data-day="5" data-odd="体能" data-even="英语"></td>
+                    </tr>
+                    <tr data-time="16:50-17:35">
+                        <td class="time-cell"><span class="time-idx">08</span><span class="time-range">16:50 - 17:35</span></td>
+                        <td class="course-cell" data-day="1" data-odd="体育" data-even="地理"></td>
+                        <td class="course-cell" data-day="2" data-odd="英语" data-even="心理"></td>
+                        <td class="course-cell" data-day="3" data-odd="数学" data-even="数学"></td>
+                        <td class="course-cell" data-day="4" data-odd="语文" data-even="语文"></td>
+                        <td class="course-cell" data-day="5" style="background-color: var(--break-row-bg); opacity: 0.5;"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 学生名单 Modal -->
+    <div id="student-modal" class="modal-backdrop">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div class="modal-title-group">
+                    <h3 class="modal-title">班级名册 (Class Roster)</h3>
+                    <span class="modal-stats" id="roster-stats">Loading stats...</span>
+                </div>
+                <button class="btn-close" id="btn-close-modal">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                </button>
+            </div>
+            <div class="student-grid" id="student-list-container">
+                <!-- JS渲染内容 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Tooltip -->
+    <div id="tooltip">
+        <div class="tooltip-icon-box">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>
+        </div>
+        <div class="tooltip-content">
+            <div class="tooltip-title" id="tip-course">Course</div>
+            <div class="tooltip-meta" id="tip-detail">Teacher · Frequency</div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- Data ---
+            const config = {
+                termStart: new Date('2025-09-01T00:00:00'),
+                holiday: { start: new Date('2025-10-01T00:00:00'), end: new Date('2025-10-07T23:59:59') },
+                teachers: {
+                    '语文': '刘乐珊', '数学': '郑焕鹏', '英语': '陈淋乔',
+                    '道法': '谢佳庆', '历史': '陈珍珠', '地理': '邓晓丹',
+                    '生物': '张伟林', '音乐': '郑迎丹', '信息': '张家穆',
+                    '心理': '沈鸿彬', '劳动': '莫腾源', '书法': '陈雪峰',
+                    '美术': '陈晓嘉', '体育': '吕树杰', '体能': '吕树杰'
+                }
+            };
+
+            // 完整 57 人名单 (已移除国际生Tag)
+            const students = [
+                { id: 1, name: '郑思妍', gender: 'F' }, { id: 2, name: '郑艺阳', gender: 'F' },
+                { id: 3, name: '吴栩洋', gender: 'M' }, { id: 4, name: '洪萱', gender: 'F' },
+                { id: 5, name: '陈潇哲', gender: 'M' }, { id: 6, name: '林曼祺', gender: 'F' },
+                { id: 7, name: '洪碧琳', gender: 'F' }, { id: 8, name: '张任葳', gender: 'F' },
+                { id: 9, name: '陈童博', gender: 'M' }, { id: 10, name: '郑浠跃', gender: 'M' },
+                { id: 11, name: '张婉仪', gender: 'F' }, { id: 12, name: '陈宝涵', gender: 'F' },
+                { id: 13, name: '洪哲轩', gender: 'M' }, { id: 14, name: '陈沐萱', gender: 'F' },
+                { id: 15, name: '郑思颖', gender: 'F' }, { id: 16, name: '陈跃宇', gender: 'M' },
+                { id: 17, name: '林锘权', gender: 'M' }, { id: 18, name: '麻晓乐', gender: 'F' },
+                { id: 19, name: '郑博涵', gender: 'M' }, { id: 20, name: '张子杰', gender: 'M' },
+                { id: 21, name: '陈鑫韩', gender: 'F' }, { id: 22, name: '张欣妮', gender: 'F' },
+                { id: 23, name: '陈书烁', gender: 'M' }, { id: 24, name: '陈奕鑫', gender: 'M' },
+                { id: 25, name: '姚霖萱', gender: 'F' }, { id: 26, name: '陈心研', gender: 'F' },
+                { id: 27, name: '林家烨', gender: 'M' }, { id: 28, name: '姚浴帆', gender: 'M' },
+                { id: 29, name: '郑艺琦', gender: 'F' }, { id: 30, name: '吴斯栩', gender: 'M' },
+                { id: 31, name: '郑晓灵', gender: 'F' }, { id: 32, name: '郑宇灿', gender: 'M' },
+                { id: 33, name: '陈琬琰', gender: 'F' }, { id: 34, name: '张佳敏', gender: 'F' },
+                { id: 35, name: '陈胜杰', gender: 'M' }, { id: 36, name: '张铠', gender: 'M' },
+                { id: 37, name: '张锘仪', gender: 'F' }, { id: 38, name: '陈丹炫', gender: 'F' },
+                { id: 39, name: '张梓恩', gender: 'M' }, { id: 40, name: '郑俊沛', gender: 'M' },
+                { id: 41, name: '李炫儿', gender: 'F' }, { id: 42, name: '陈希萱', gender: 'F' },
+                { id: 43, name: '赵智俊', gender: 'M' }, { id: 44, name: '陈梓烁', gender: 'M' },
+                { id: 45, name: '李埴禧', gender: 'F' }, { id: 46, name: '陈晓帆', gender: 'F' },
+                { id: 47, name: '李博瀚', gender: 'M' }, { id: 48, name: '陈烨帆', gender: 'M' },
+                { id: 49, name: '张梓博', gender: 'M' }, { id: 50, name: '陈梓媛', gender: 'F' },
+                { id: 51, name: '杨洋', gender: 'M' }, { id: 52, name: '姚轩沐', gender: 'M' },
+                { id: 53, name: '郑雅曼', gender: 'F' }, { id: 54, name: '张思泳', gender: 'M' },
+                { id: 55, name: '许建轩', gender: 'M' }, { id: 56, name: '林欣悦', gender: 'F' },
+                { id: 57, name: '黄梓玲', gender: 'F' }
+            ];
+
+            const els = {
+                dateStr: document.getElementById('date-str'),
+                weekBadge: document.getElementById('week-badge'),
+                holidayMask: document.getElementById('holiday-mask'),
+                tooltip: document.getElementById('tooltip'),
+                tipCourse: document.getElementById('tip-course'),
+                tipDetail: document.getElementById('tip-detail'),
+                // Modal Elements
+                btnStudents: document.getElementById('btn-students'),
+                btnCloseModal: document.getElementById('btn-close-modal'),
+                studentModal: document.getElementById('student-modal'),
+                studentContainer: document.getElementById('student-list-container'),
+                rosterStats: document.getElementById('roster-stats')
+            };
+
+            const state = { today: new Date(), dayOfWeek: new Date().getDay() };
+
+            // --- Helpers ---
+            function getWeekData(date) {
+                if (date < config.termStart) return { num: 0, type: 'Pre-Term' };
+                const diff = date - config.termStart;
+                const weekNum = Math.floor(diff / (1000 * 60 * 60 * 24 * 7)) + 1;
+                return { num: weekNum, type: weekNum % 2 === 0 ? '双周 (Even)' : '单周 (Odd)' };
+            }
+
+            function renderStudents() {
+                // Stats calculation
+                const total = students.length;
+                const boys = students.filter(s => s.gender === 'M').length;
+                const girls = students.filter(s => s.gender === 'F').length;
+                els.rosterStats.textContent = `Total: ${total} | Boys: ${boys} | Girls: ${girls}`;
+
+                // Grid rendering (Optimized)
+                els.studentContainer.innerHTML = students.map(s => `
+                    <div class="student-item">
+                        <span class="student-id-badge">${String(s.id).padStart(2, '0')}</span>
+                        <span class="student-name">${s.name}</span>
+                        <span class="gender-dot ${s.gender === 'M' ? 'gender-m' : 'gender-f'}" 
+                              title="${s.gender === 'M' ? '男' : '女'}"></span>
+                    </div>
+                `).join('');
+            }
+
+            // --- Core Logic ---
+            function init() {
+                renderStudents();
+                const weekData = getWeekData(state.today);
+                
+                const dateOptions = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+                els.dateStr.textContent = state.today.toLocaleDateString('zh-CN', dateOptions);
+                
+                if (state.today >= config.holiday.start && state.today <= config.holiday.end) {
+                    els.weekBadge.textContent = "Holiday";
+                    els.weekBadge.classList.add('active');
+                    els.holidayMask.style.display = 'flex';
+                    return;
+                }
+
+                els.weekBadge.textContent = weekData.type === 'Pre-Term' ? "即将开学" : `第 ${weekData.num} 周 · ${weekData.type}`;
+                if(weekData.type !== 'Pre-Term') els.weekBadge.classList.add('active');
+
+                document.querySelectorAll('[data-odd]').forEach(td => {
+                    td.textContent = weekData.num % 2 !== 0 ? td.dataset.odd : td.dataset.even;
+                });
+
+                if (state.dayOfWeek >= 1 && state.dayOfWeek <= 5) {
+                    const idx = state.dayOfWeek;
+                    const th = document.querySelector(`th[data-day="${idx}"]`);
+                    if(th) th.classList.add('is-today');
+                    document.querySelectorAll(`td[data-day="${idx}"]`).forEach(td => td.classList.add('is-today'));
+                }
+
+                checkCurrentTime();
+                setInterval(checkCurrentTime, 60000);
+            }
+
+            function checkCurrentTime() {
+                document.querySelectorAll('.current-class').forEach(el => el.classList.remove('current-class'));
+                if (state.dayOfWeek < 1 || state.dayOfWeek > 5) return;
+                const nowStr = state.today.toTimeString().slice(0, 5);
+                const now = new Date(); 
+                
+                document.querySelectorAll('tr[data-time]').forEach(row => {
+                    const [startStr, endStr] = row.dataset.time.split('-');
+                    const start = new Date(now.toDateString() + ' ' + startStr);
+                    const end = new Date(now.toDateString() + ' ' + endStr);
+                    if (now >= start && now < end) {
+                        row.querySelector('.time-cell').classList.add('current-class');
+                        const courseCell = row.querySelector(`td[data-day="${state.dayOfWeek}"]`);
+                        if (courseCell) courseCell.classList.add('current-class');
+                    }
+                });
+            }
+
+            // --- Event Listeners ---
+            const table = document.getElementById('timetable');
+            table.addEventListener('mouseover', (e) => {
+                if (e.target.classList.contains('course-cell')) {
+                    const name = e.target.textContent.trim();
+                    if (!name) return;
+                    const teacher = config.teachers[name] || 'N/A';
+                    let count = 0;
+                    document.querySelectorAll('.course-cell').forEach(td => { if(td.textContent.trim() === name) count++; });
+
+                    els.tipCourse.textContent = name;
+                    els.tipDetail.textContent = `${teacher} · 每周 ${count} 节`;
+
+                    const rect = e.target.getBoundingClientRect();
+                    const tipRect = els.tooltip.getBoundingClientRect();
+                    let left = rect.left + (rect.width / 2) - (tipRect.width / 2);
+                    if (left < 0) left = 10;
+                    
+                    els.tooltip.style.left = `${left + window.scrollX}px`;
+                    els.tooltip.style.top = `${rect.top - tipRect.height - 10 + window.scrollY}px`;
+                    els.tooltip.classList.add('visible');
+                }
+            });
+            table.addEventListener('mouseout', () => els.tooltip.classList.remove('visible'));
+
+            // Modal Interaction
+            const toggleModal = (isOpen) => {
+                if (isOpen) els.studentModal.classList.add('open');
+                else els.studentModal.classList.remove('open');
+            };
+            els.btnStudents.addEventListener('click', () => toggleModal(true));
+            els.btnCloseModal.addEventListener('click', () => toggleModal(false));
+            els.studentModal.addEventListener('click', (e) => {
+                if (e.target === els.studentModal) toggleModal(false);
+            });
+
+            init();
+        });
+    </script>
+</body>
+</html>
